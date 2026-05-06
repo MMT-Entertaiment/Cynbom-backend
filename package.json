@@ -1,0 +1,19 @@
+{
+  "name": "cynbom",
+  "version": "1.0.0",
+  "description": "Site de streaming Cynbom avec bot Discord",
+  "main": "api.js",
+  "scripts": {
+    "api": "node api.js",
+    "bot": "node bot.js",
+    "start": "node api.js & node bot.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "node-fetch": "^3.3.2"
+  }
+}
