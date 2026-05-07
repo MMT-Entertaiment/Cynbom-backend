@@ -9,6 +9,7 @@ db.exec(`
     annee INTEGER,
     age TEXT,
     genre TEXT,
+    image TEXT,
     vedette INTEGER DEFAULT 0
   );
 
@@ -18,15 +19,20 @@ db.exec(`
     saison INTEGER NOT NULL,
     numero INTEGER NOT NULL,
     titre TEXT,
+    video TEXT,
     FOREIGN KEY (serie_id) REFERENCES series(id)
   );
 `);
 
+// Migration : ajouter les colonnes si elles n'existent pas encore
+try { db.exec('ALTER TABLE series ADD COLUMN image TEXT'); } catch {}
+try { db.exec('ALTER TABLE episodes ADD COLUMN video TEXT'); } catch {}
+
 module.exports = {
   // SÉRIES
-  ajouterSerie(titre, studio, annee, age, genre) {
-    const stmt = db.prepare('INSERT INTO series (titre, studio, annee, age, genre) VALUES (?, ?, ?, ?, ?)');
-    return stmt.run(titre, studio, annee, age, genre);
+  ajouterSerie(titre, studio, annee, age, genre, image) {
+    const stmt = db.prepare('INSERT INTO series (titre, studio, annee, age, genre, image) VALUES (?, ?, ?, ?, ?, ?)');
+    return stmt.run(titre, studio, annee, age, genre, image || null);
   },
 
   supprimerSerie(titre) {
@@ -38,7 +44,7 @@ module.exports = {
   },
 
   modifierSerie(titre, champ, valeur) {
-    const champsAutorisés = ['titre', 'studio', 'annee', 'age', 'genre'];
+    const champsAutorisés = ['titre', 'studio', 'annee', 'age', 'genre', 'image'];
     if (!champsAutorisés.includes(champ)) return false;
     const stmt = db.prepare(`UPDATE series SET ${champ} = ? WHERE titre = ?`);
     const result = stmt.run(valeur, titre);
@@ -60,11 +66,11 @@ module.exports = {
   },
 
   // ÉPISODES
-  ajouterEpisode(titreSerie, saison, numero, titreEp) {
+  ajouterEpisode(titreSerie, saison, numero, titreEp, video) {
     const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(titreSerie);
     if (!serie) return false;
-    const stmt = db.prepare('INSERT INTO episodes (serie_id, saison, numero, titre) VALUES (?, ?, ?, ?)');
-    stmt.run(serie.id, saison, numero, titreEp);
+    const stmt = db.prepare('INSERT INTO episodes (serie_id, saison, numero, titre, video) VALUES (?, ?, ?, ?, ?)');
+    stmt.run(serie.id, saison, numero, titreEp, video || null);
     return true;
   },
 
