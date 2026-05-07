@@ -15,7 +15,7 @@ const commands = [
     .addIntegerOption(o => o.setName('annee').setDescription('Année de sortie').setRequired(true))
     .addStringOption(o => o.setName('age').setDescription('Classification âge (ex: 13+)').setRequired(true))
     .addStringOption(o => o.setName('genre').setDescription('Genre (ex: SF, Comédie...)').setRequired(true))
-    .addStringOption(o => o.setName('image').setDescription('URL image (https://i.postimg.cc/id/name.png)').setRequired(false)),
+    .addStringOption(o => o.setName('image').setDescription('URL image (https://i.postimg.cc/id/name.png)').setRequired(true)),
 
   new SlashCommandBuilder()
     .setName('supprimer-serie')
