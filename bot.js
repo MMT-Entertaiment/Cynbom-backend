@@ -52,6 +52,14 @@ const commands = [
     .addStringOption(o => o.setName('video').setDescription('URL YouTube (https://www.youtube.com/watch?v=XXXX)').setRequired(false)),
 
   new SlashCommandBuilder()
+    .setName('modifier-episode')
+    .setDescription('Modifier la vidéo d\'un épisode')
+    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
+    .addIntegerOption(o => o.setName('saison').setDescription('Numéro de saison').setRequired(true))
+    .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
+    .addStringOption(o => o.setName('video').setDescription('Nouvelle URL YouTube').setRequired(true)),
+
+  new SlashCommandBuilder()
     .setName('retirer-episode')
     .setDescription('Retirer un épisode d\'une série')
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
@@ -128,6 +136,20 @@ client.on('interactionCreate', async interaction => {
       });
       const data = await res.json();
       await interaction.editReply(data.success ? `✅ Épisode S${saison}E${numero} ajouté à **${serie}**.` : `❌ Série introuvable.`);
+    }
+
+    else if (commandName === 'modifier-episode') {
+      const serie = interaction.options.getString('serie');
+      const saison = interaction.options.getInteger('saison');
+      const numero = interaction.options.getInteger('numero');
+      const video = interaction.options.getString('video');
+      const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes/${saison}/${numero}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ video }),
+      });
+      const data = await res.json();
+      await interaction.editReply(data.success ? `✏️ Vidéo de S${saison}E${numero} mise à jour.` : `❌ Épisode introuvable.`);
     }
 
     else if (commandName === 'retirer-episode') {
