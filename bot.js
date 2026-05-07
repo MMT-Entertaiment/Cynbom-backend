@@ -6,7 +6,6 @@ const API = `http://localhost:${process.env.PORT || 3000}`;
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// Définition des commandes slash
 const commands = [
   new SlashCommandBuilder()
     .setName('ajouter-serie')
@@ -15,7 +14,8 @@ const commands = [
     .addStringOption(o => o.setName('studio').setDescription('Studio').setRequired(true))
     .addIntegerOption(o => o.setName('annee').setDescription('Année de sortie').setRequired(true))
     .addStringOption(o => o.setName('age').setDescription('Classification âge (ex: 13+)').setRequired(true))
-    .addStringOption(o => o.setName('genre').setDescription('Genre (ex: SF, Comédie...)').setRequired(true)),
+    .addStringOption(o => o.setName('genre').setDescription('Genre (ex: SF, Comédie...)').setRequired(true))
+    .addStringOption(o => o.setName('image').setDescription('URL image (https://i.postimg.cc/id/name.png)').setRequired(false)),
 
   new SlashCommandBuilder()
     .setName('supprimer-serie')
@@ -33,6 +33,7 @@ const commands = [
         { name: 'Année', value: 'annee' },
         { name: 'Âge', value: 'age' },
         { name: 'Genre', value: 'genre' },
+        { name: 'Image', value: 'image' },
       ))
     .addStringOption(o => o.setName('valeur').setDescription('Nouvelle valeur').setRequired(true)),
 
@@ -47,7 +48,8 @@ const commands = [
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
     .addIntegerOption(o => o.setName('saison').setDescription('Numéro de saison').setRequired(true))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
-    .addStringOption(o => o.setName('titre').setDescription('Titre de l\'épisode').setRequired(false)),
+    .addStringOption(o => o.setName('titre').setDescription('Titre de l\'épisode').setRequired(false))
+    .addStringOption(o => o.setName('video').setDescription('URL YouTube (https://www.youtube.com/watch?v=XXXX)').setRequired(false)),
 
   new SlashCommandBuilder()
     .setName('retirer-episode')
@@ -61,13 +63,11 @@ const commands = [
     .setDescription('Voir toutes les séries du site'),
 ].map(c => c.toJSON());
 
-// Enregistrement des commandes
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 rest.put(Routes.applicationGuildCommands(process.env.APPLICATION_ID, process.env.GUILD_ID), { body: commands })
   .then(() => console.log('Commandes slash enregistrées'))
   .catch(console.error);
 
-// Gestion des interactions
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
   await interaction.deferReply({ ephemeral: true });
@@ -82,6 +82,7 @@ client.on('interactionCreate', async interaction => {
         annee: interaction.options.getInteger('annee'),
         age: interaction.options.getString('age'),
         genre: interaction.options.getString('genre'),
+        image: interaction.options.getString('image') || null,
       };
       await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       await interaction.editReply(`✅ Série **${body.titre}** ajoutée.`);
@@ -104,7 +105,7 @@ client.on('interactionCreate', async interaction => {
         body: JSON.stringify({ champ, valeur }),
       });
       const data = await res.json();
-      await interaction.editReply(data.success ? `✏️ **${titre}** — ${champ} mis à jour : **${valeur}**` : `❌ Série introuvable.`);
+      await interaction.editReply(data.success ? `✏️ **${titre}** — ${champ} mis à jour.` : `❌ Série introuvable.`);
     }
 
     else if (commandName === 'vedette') {
@@ -119,10 +120,11 @@ client.on('interactionCreate', async interaction => {
       const saison = interaction.options.getInteger('saison');
       const numero = interaction.options.getInteger('numero');
       const titre = interaction.options.getString('titre') || null;
+      const video = interaction.options.getString('video') || null;
       const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ saison, numero, titre }),
+        body: JSON.stringify({ saison, numero, titre, video }),
       });
       const data = await res.json();
       await interaction.editReply(data.success ? `✅ Épisode S${saison}E${numero} ajouté à **${serie}**.` : `❌ Série introuvable.`);
