@@ -53,6 +53,16 @@ app.post('/series/:titre/episodes', (req, res) => {
   res.json({ success: ok });
 });
 
+// PATCH modifier vidéo épisode
+app.patch('/series/:titre/episodes/:saison/:numero', (req, res) => {
+  const { video } = req.body;
+  const serie = require('./database').getSerie(req.params.titre);
+  if (!serie) return res.json({ success: false });
+  const db = require('better-sqlite3')('cynbom.db');
+  const result = db.prepare('UPDATE episodes SET video = ? WHERE serie_id = ? AND saison = ? AND numero = ?').run(video, serie.id, req.params.saison, req.params.numero);
+  res.json({ success: result.changes > 0 });
+});
+
 // DELETE retirer épisode
 app.delete('/series/:titre/episodes/:saison/:numero', (req, res) => {
   const ok = db.retirerEpisode(req.params.titre, req.params.saison, req.params.numero);
