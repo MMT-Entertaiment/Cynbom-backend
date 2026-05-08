@@ -16,7 +16,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS episodes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     serie_id INTEGER NOT NULL,
-    saison INTEGER NOT NULL,
+    saison TEXT NOT NULL,
     numero INTEGER NOT NULL,
     titre TEXT,
     video TEXT,
@@ -27,6 +27,7 @@ db.exec(`
 // Migration : ajouter les colonnes si elles n'existent pas encore
 try { db.exec('ALTER TABLE series ADD COLUMN image TEXT'); } catch {}
 try { db.exec('ALTER TABLE episodes ADD COLUMN video TEXT'); } catch {}
+try { db.exec('ALTER TABLE episodes ADD COLUMN saison_new TEXT'); db.exec('UPDATE episodes SET saison_new = CAST(saison AS TEXT)'); } catch {}
 
 module.exports = {
   // SÉRIES
