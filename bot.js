@@ -46,7 +46,7 @@ const commands = [
     .setName('ajouter-episode')
     .setDescription('Ajouter un épisode à une série')
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
-    .addIntegerOption(o => o.setName('saison').setDescription('Numéro de saison').setRequired(true))
+    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
     .addStringOption(o => o.setName('titre').setDescription('Titre de l\'épisode').setRequired(false))
     .addStringOption(o => o.setName('video').setDescription('URL YouTube (https://www.youtube.com/watch?v=XXXX)').setRequired(false)),
@@ -63,7 +63,7 @@ const commands = [
     .setName('retirer-episode')
     .setDescription('Retirer un épisode d\'une série')
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
-    .addIntegerOption(o => o.setName('saison').setDescription('Numéro de saison').setRequired(true))
+    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true)),
 
   new SlashCommandBuilder()
@@ -125,7 +125,7 @@ client.on('interactionCreate', async interaction => {
 
     else if (commandName === 'ajouter-episode') {
       const serie = interaction.options.getString('serie');
-      const saison = interaction.options.getInteger('saison');
+      const saison = interaction.options.getString('saison') || '1';
       const numero = interaction.options.getInteger('numero');
       const titre = interaction.options.getString('titre') || null;
       const video = interaction.options.getString('video') || null;
@@ -140,7 +140,7 @@ client.on('interactionCreate', async interaction => {
 
     else if (commandName === 'modifier-episode') {
       const serie = interaction.options.getString('serie');
-      const saison = interaction.options.getInteger('saison');
+      const saison = interaction.options.getString('saison') || '1';
       const numero = interaction.options.getInteger('numero');
       const video = interaction.options.getString('video');
       const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes/${saison}/${numero}`, {
@@ -154,7 +154,7 @@ client.on('interactionCreate', async interaction => {
 
     else if (commandName === 'retirer-episode') {
       const serie = interaction.options.getString('serie');
-      const saison = interaction.options.getInteger('saison');
+      const saison = interaction.options.getString('saison') || '1';
       const numero = interaction.options.getInteger('numero');
       const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes/${saison}/${numero}`, { method: 'DELETE' });
       const data = await res.json();
