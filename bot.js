@@ -67,6 +67,11 @@ const commands = [
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true)),
 
   new SlashCommandBuilder()
+    .setName('restaurer-backup')
+    .setDescription('Restaurer la DB depuis un fichier backup JSON joint')
+    .addAttachmentOption(o => o.setName('fichier').setDescription('Fichier backup .json').setRequired(true)),
+
+  new SlashCommandBuilder()
     .setName('liste-series')
     .setDescription('Voir toutes les séries du site'),
 ].map(c => c.toJSON());
@@ -161,6 +166,29 @@ client.on('interactionCreate', async interaction => {
       await interaction.editReply(data.success ? `🗑️ Épisode S${saison}E${numero} retiré de **${serie}**.` : `❌ Épisode introuvable.`);
     }
 
+    else if (commandName === 'restaurer-backup') {
+      const attachment = interaction.options.getAttachment('fichier');
+      if (!attachment) return await interaction.editReply('❌ Joignez un fichier backup JSON à la commande.');
+      try {
+        const res = await fetch(attachment.url);
+        const backup = await res.json();
+        // Restaurer séries
+        for (const s of backup.series) {
+          await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(s) });
+          if (s.vedette) await fetch(`${API}/series/${encodeURIComponent(s.titre)}/vedette`, { method: 'POST' });
+        }
+        // Restaurer épisodes
+        for (const [titre, eps] of Object.entries(backup.episodes || {})) {
+          for (const ep of eps) {
+            await fetch(`${API}/series/${encodeURIComponent(titre)}/episodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ep) });
+          }
+        }
+        await interaction.editReply(`✅ Backup restauré ! ${backup.series.length} séries/films récupérés.`);
+      } catch(e) {
+        await interaction.editReply('❌ Erreur lors de la restauration.');
+      }
+    }
+
     else if (commandName === 'liste-series') {
       const res = await fetch(`${API}/series`);
       const series = await res.json();
@@ -175,5 +203,34 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-client.once('ready', () => console.log(`Bot connecté en tant que ${client.user.tag}`));
+client.once('ready', () => {
+  console.log(`Bot connecté en tant que ${client.user.tag}`);
+
+  // Backup automatique toutes les 24h
+  async function envoyerBackup() {
+    try {
+      const series = await fetch('http://localhost:' + (process.env.PORT || 3000) + '/series').then(r => r.json());
+      const episodes = {};
+      for (const s of series) {
+        const eps = await fetch('http://localhost:' + (process.env.PORT || 3000) + '/series/' + encodeURIComponent(s.titre) + '/episodes').then(r => r.json());
+        if (eps.length > 0) episodes[s.titre] = eps;
+      }
+      const backup = JSON.stringify({ series, episodes }, null, 2);
+      const date = new Date().toLocaleDateString('fr-FR');
+      const channel = await client.channels.fetch('1502237956163895307');
+      await channel.send({
+        content: `📦 **Backup automatique Cynbom** — ${date}`,
+        files: [{ attachment: Buffer.from(backup), name: `cynbom-backup-${date.replace(/\//g, '-')}.json` }]
+      });
+      console.log('Backup envoyé sur Discord');
+    } catch(e) {
+      console.error('Erreur backup:', e);
+    }
+  }
+
+  // Backup immédiat au démarrage + toutes les 24h
+  setTimeout(envoyerBackup, 10000);
+  setInterval(envoyerBackup, 24 * 60 * 60 * 1000);
+});
+
 client.login(process.env.DISCORD_TOKEN);
