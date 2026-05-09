@@ -123,7 +123,7 @@ client.on('interactionCreate', async interaction => {
         annee: interaction.options.getInteger('annee'),
         age: interaction.options.getString('age'),
         genre: `${type} | ${genre}`,
-        image: interaction.options.getString('image') || null,
+        image: interaction.options.getString('image'),
       };
       await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       await interaction.editReply(`✅ Série **${body.titre}** ajoutée.`);
