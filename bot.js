@@ -89,6 +89,10 @@ const commands = [
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true)),
 
   new SlashCommandBuilder()
+    .setName('cree-backup')
+    .setDescription('Créer un backup manuel de la base de données'),
+
+  new SlashCommandBuilder()
     .setName('restaurer-backup')
     .setDescription('Restaurer la DB depuis un fichier backup JSON joint')
     .addAttachmentOption(o => o.setName('fichier').setDescription('Fichier backup .json').setRequired(true)),
@@ -188,6 +192,28 @@ client.on('interactionCreate', async interaction => {
       const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes/${saison}/${numero}`, { method: 'DELETE' });
       const data = await res.json();
       await interaction.editReply(data.success ? `🗑️ Épisode S${saison}E${numero} retiré de **${serie}**.` : `❌ Épisode introuvable.`);
+    }
+
+    else if (commandName === 'cree-backup') {
+      try {
+        const series = await fetch(`${API}/series`).then(r => r.json());
+        const episodes = {};
+        for (const s of series) {
+          const eps = await fetch(`${API}/series/${encodeURIComponent(s.titre)}/episodes`).then(r => r.json());
+          if (eps.length > 0) episodes[s.titre] = eps;
+        }
+        const backup = JSON.stringify({ series, episodes }, null, 2);
+        const date = new Date().toLocaleDateString('fr-FR');
+        const channel = await client.channels.fetch('1502237956163895307');
+        await channel.send({
+          content: `📦 **Backup manuel Cynbom** — ${date}`,
+          files: [{ attachment: Buffer.from(backup), name: `cynbom-backup-${date.replace(/\//g, '-')}.json` }]
+        });
+        await interaction.editReply(`✅ Backup créé et envoyé dans le channel backup !`);
+      } catch(e) {
+        console.error(e);
+        await interaction.editReply('❌ Erreur lors de la création du backup.');
+      }
     }
 
     else if (commandName === 'restaurer-backup') {
