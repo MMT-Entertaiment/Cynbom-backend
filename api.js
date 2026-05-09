@@ -21,9 +21,9 @@ app.get('/series/:titre/episodes', (req, res) => {
 
 // POST ajouter série
 app.post('/series', (req, res) => {
-  const { titre, studio, annee, age, genre } = req.body;
+  const { titre, studio, annee, age, genre, image } = req.body;
   if (!titre) return res.status(400).json({ error: 'Titre requis' });
-  db.ajouterSerie(titre, studio, annee, age, genre);
+  db.ajouterSerie(titre, studio, annee, age, genre, image || null);
   res.json({ success: true });
 });
 
@@ -48,25 +48,26 @@ app.post('/series/:titre/vedette', (req, res) => {
 
 // POST ajouter épisode
 app.post('/series/:titre/episodes', (req, res) => {
-  const { saison, numero, titre: titreEp } = req.body;
-  const ok = db.ajouterEpisode(req.params.titre, saison, numero, titreEp);
+  const { saison, numero, titre: titreEp, video } = req.body;
+  const ok = db.ajouterEpisode(req.params.titre, saison || '1', numero, titreEp, video);
   res.json({ success: ok });
-});
-
-// PATCH modifier vidéo épisode
-app.patch('/series/:titre/episodes/:saison/:numero', (req, res) => {
-  const { video } = req.body;
-  const serie = require('./database').getSerie(req.params.titre);
-  if (!serie) return res.json({ success: false });
-  const db = require('better-sqlite3')('cynbom.db');
-  const result = db.prepare('UPDATE episodes SET video = ? WHERE serie_id = ? AND saison = ? AND numero = ?').run(video, serie.id, req.params.saison, req.params.numero);
-  res.json({ success: result.changes > 0 });
 });
 
 // DELETE retirer épisode
 app.delete('/series/:titre/episodes/:saison/:numero', (req, res) => {
   const ok = db.retirerEpisode(req.params.titre, req.params.saison, req.params.numero);
   res.json({ success: ok });
+});
+
+// PATCH modifier vidéo épisode
+app.patch('/series/:titre/episodes/:saison/:numero', (req, res) => {
+  const { video } = req.body;
+  const serie = db.getSerie(req.params.titre);
+  if (!serie) return res.json({ success: false });
+  const Database = require('better-sqlite3');
+  const bdb = new Database('cynbom.db');
+  const result = bdb.prepare('UPDATE episodes SET video = ? WHERE serie_id = ? AND saison = ? AND numero = ?').run(video, serie.id, req.params.saison, req.params.numero);
+  res.json({ success: result.changes > 0 });
 });
 
 const PORT = process.env.PORT || 3000;
