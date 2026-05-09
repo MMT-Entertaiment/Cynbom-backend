@@ -9,13 +9,34 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const commands = [
   new SlashCommandBuilder()
     .setName('ajouter-serie')
-    .setDescription('Ajouter une série au site')
-    .addStringOption(o => o.setName('titre').setDescription('Titre de la série').setRequired(true))
+    .setDescription('Ajouter une série ou un film au site')
+    .addStringOption(o => o.setName('titre').setDescription('Titre').setRequired(true))
+    .addStringOption(o => o.setName('type').setDescription('Type').setRequired(true)
+      .addChoices(
+        { name: 'Série', value: 'Série' },
+        { name: 'Film', value: 'Film' },
+      ))
+    .addStringOption(o => o.setName('genre').setDescription('Genre').setRequired(true)
+      .addChoices(
+        { name: 'Action', value: 'Action' },
+        { name: 'Aventure', value: 'Aventure' },
+        { name: 'Comédie', value: 'Comédie' },
+        { name: 'Drame', value: 'Drame' },
+        { name: 'Fantaisie', value: 'Fantaisie' },
+        { name: 'Horreur', value: 'Horreur' },
+        { name: 'Horreur Psychologique', value: 'Horreur Psychologique' },
+        { name: 'Musical', value: 'Musical' },
+        { name: 'Romance', value: 'Romance' },
+        { name: 'SF', value: 'SF' },
+        { name: 'Super-héros', value: 'Super-héros' },
+        { name: 'Thriller', value: 'Thriller' },
+        { name: 'Documentaire', value: 'Documentaire' },
+        { name: 'Animation', value: 'Animation' },
+      ))
     .addStringOption(o => o.setName('studio').setDescription('Studio').setRequired(true))
     .addIntegerOption(o => o.setName('annee').setDescription('Année de sortie').setRequired(true))
     .addStringOption(o => o.setName('age').setDescription('Classification âge (ex: 13+)').setRequired(true))
-    .addStringOption(o => o.setName('genre').setDescription('Genre (ex: SF, Comédie...)').setRequired(true))
-    .addStringOption(o => o.setName('image').setDescription('URL image (https://i.postimg.cc/id/name.png)').setRequired(true)),
+    .addStringOption(o => o.setName('image').setDescription('URL image').setRequired(true)),
 
   new SlashCommandBuilder()
     .setName('supprimer-serie')
@@ -33,6 +54,7 @@ const commands = [
         { name: 'Année', value: 'annee' },
         { name: 'Âge', value: 'age' },
         { name: 'Genre', value: 'genre' },
+        { name: 'Type', value: 'type' },
         { name: 'Image', value: 'image' },
       ))
     .addStringOption(o => o.setName('valeur').setDescription('Nouvelle valeur').setRequired(true)),
@@ -89,12 +111,14 @@ client.on('interactionCreate', async interaction => {
 
   try {
     if (commandName === 'ajouter-serie') {
+      const type = interaction.options.getString('type');
+      const genre = interaction.options.getString('genre');
       const body = {
         titre: interaction.options.getString('titre'),
         studio: interaction.options.getString('studio'),
         annee: interaction.options.getInteger('annee'),
         age: interaction.options.getString('age'),
-        genre: interaction.options.getString('genre'),
+        genre: `${type} | ${genre}`,
         image: interaction.options.getString('image') || null,
       };
       await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
