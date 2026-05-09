@@ -68,8 +68,8 @@ const commands = [
     .setName('ajouter-episode')
     .setDescription('Ajouter un épisode à une série')
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
-    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
+    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false))
     .addStringOption(o => o.setName('titre').setDescription('Titre de l\'épisode').setRequired(false))
     .addStringOption(o => o.setName('video').setDescription('URL YouTube (https://www.youtube.com/watch?v=XXXX)').setRequired(false)),
 
@@ -77,16 +77,16 @@ const commands = [
     .setName('modifier-episode')
     .setDescription('Modifier la vidéo d\'un épisode')
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
-    .addIntegerOption(o => o.setName('saison').setDescription('Numéro de saison').setRequired(true))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
-    .addStringOption(o => o.setName('video').setDescription('Nouvelle URL YouTube').setRequired(true)),
+    .addStringOption(o => o.setName('video').setDescription('Nouvelle URL YouTube').setRequired(true))
+    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false)),
 
   new SlashCommandBuilder()
     .setName('retirer-episode')
     .setDescription('Retirer un épisode d\'une série')
     .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
-    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false))
-    .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true)),
+    .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
+    .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false)),
 
   new SlashCommandBuilder()
     .setName('cree-backup')
