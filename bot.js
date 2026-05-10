@@ -96,7 +96,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName('restaurer-backup')
     .setDescription('Restaurer la DB depuis un fichier backup JSON joint')
-    .addAttachmentOption(o => o.setName('fichier').setDescription('Fichier backup .json').setRequired(true)),
+    .addAttachmentOption(o => o.setName('fichier').setDescription('Fichier backup .json').setRequired(true))
+    .addStringOption(o => o.setName('comportement').setDescription('Mode de restauration').setRequired(true)
+      .addChoices(
+        { name: 'Ajouter (conserver l'existant)', value: 'ajouter' },
+        { name: 'Écraser (vider puis importer)', value: 'ecraser' }
+      )),
 
   new SlashCommandBuilder()
     .setName('liste-series')
@@ -219,10 +224,20 @@ client.on('interactionCreate', async interaction => {
 
     else if (commandName === 'restaurer-backup') {
       const attachment = interaction.options.getAttachment('fichier');
+      const comportement = interaction.options.getString('comportement');
       if (!attachment) return await interaction.editReply('❌ Joignez un fichier backup JSON à la commande.');
       try {
         const res = await fetch(attachment.url);
         const backup = await res.json();
+        
+        // Vider la DB si mode écraser
+        if (comportement === 'ecraser') {
+          const allSeries = await fetch(`${API}/series`).then(r => r.json());
+          for (const s of allSeries) {
+            await fetch(`${API}/series/${encodeURIComponent(s.titre)}`, { method: 'DELETE' });
+          }
+        }
+        
         // Restaurer séries
         for (const s of backup.series) {
           await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(s) });
