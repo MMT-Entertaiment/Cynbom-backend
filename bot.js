@@ -15,6 +15,7 @@ const commands = [
       .addChoices(
         { name: 'Série', value: 'Série' },
         { name: 'Film', value: 'Film' },
+        { name: 'OST', value: 'OST' },
       ))
     .addStringOption(o => o.setName('genre').setDescription('Genre').setRequired(true)
       .addChoices(
