@@ -99,7 +99,7 @@ const commands = [
     .addAttachmentOption(o => o.setName('fichier').setDescription('Fichier backup .json').setRequired(true))
     .addStringOption(o => o.setName('comportement').setDescription('Mode de restauration').setRequired(true)
       .addChoices(
-        { name: 'Ajouter (conserver l'existant)', value: 'ajouter' },
+        { name: "Ajouter (conserver l'existant)", value: 'ajouter' },
         { name: 'Écraser (vider puis importer)', value: 'ecraser' }
       )),
 
