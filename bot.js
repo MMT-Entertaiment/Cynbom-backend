@@ -42,12 +42,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName('supprimer-serie')
     .setDescription('Supprimer une série du site')
-    .addStringOption(o => o.setName('titre').setDescription('Titre exact de la série').setRequired(true)),
+    .addStringOption(o => o.setName('titre').setDescription('Titre exact de la série').setRequired(true).setAutocomplete(true)),
 
   new SlashCommandBuilder()
     .setName('modifier-serie')
     .setDescription('Modifier une info d\'une série')
-    .addStringOption(o => o.setName('titre').setDescription('Titre exact de la série').setRequired(true))
+    .addStringOption(o => o.setName('titre').setDescription('Titre exact de la série').setRequired(true).setAutocomplete(true))
     .addStringOption(o => o.setName('champ').setDescription('Champ à modifier').setRequired(true)
       .addChoices(
         { name: 'Titre', value: 'titre' },
@@ -63,12 +63,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName('vedette')
     .setDescription('Mettre une série en vedette sur le site')
-    .addStringOption(o => o.setName('titre').setDescription('Titre exact de la série').setRequired(true)),
+    .addStringOption(o => o.setName('titre').setDescription('Titre exact de la série').setRequired(true).setAutocomplete(true)),
 
   new SlashCommandBuilder()
     .setName('ajouter-episode')
     .setDescription('Ajouter un épisode à une série')
-    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
+    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true).setAutocomplete(true))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
     .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false))
     .addStringOption(o => o.setName('titre').setDescription('Titre de l\'épisode').setRequired(false))
@@ -77,7 +77,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('modifier-episode')
     .setDescription('Modifier la vidéo d\'un épisode')
-    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
+    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true).setAutocomplete(true))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
     .addStringOption(o => o.setName('video').setDescription('Nouvelle URL YouTube').setRequired(true))
     .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false)),
@@ -85,7 +85,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('retirer-episode')
     .setDescription('Retirer un épisode d\'une série')
-    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true))
+    .addStringOption(o => o.setName('serie').setDescription('Titre exact de la série').setRequired(true).setAutocomplete(true))
     .addIntegerOption(o => o.setName('numero').setDescription('Numéro d\'épisode').setRequired(true))
     .addStringOption(o => o.setName('saison').setDescription('Numéro ou nom de saison (ex: 1, Trailer)').setRequired(false)),
 
@@ -112,6 +112,26 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 rest.put(Routes.applicationGuildCommands(process.env.APPLICATION_ID, process.env.GUILD_ID), { body: commands })
   .then(() => console.log('Commandes slash enregistrées'))
   .catch(console.error);
+
+
+// Autocomplete pour les noms de séries
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isAutocomplete()) return;
+  
+  if (['supprimer-serie', 'modifier-serie', 'vedette', 'ajouter-episode', 'retirer-episode', 'modifier-episode'].includes(interaction.commandName)) {
+    const focusedValue = interaction.options.getFocused().toLowerCase();
+    try {
+      const series = await fetch(`${API}/series`).then(r => r.json());
+      const filtered = series
+        .filter(s => s.titre.toLowerCase().includes(focusedValue))
+        .slice(0, 25)
+        .map(s => ({ name: s.titre, value: s.titre }));
+      await interaction.respond(filtered.length > 0 ? filtered : [{ name: 'Aucune série trouvée', value: '' }]);
+    } catch {
+      await interaction.respond([{ name: 'Erreur de chargement', value: '' }]);
+    }
+  }
+});
 
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
