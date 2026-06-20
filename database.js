@@ -36,6 +36,7 @@ function getSerieByUrlId(url_id) {
 }
 
 module.exports = {
+  getSerieByUrlId,
   // SÉRIES
   ajouterSerie(titre, studio, annee, age, genre, image, url_id) {
     if (!url_id) {
