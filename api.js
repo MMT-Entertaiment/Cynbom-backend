@@ -28,9 +28,9 @@ app.get('/series/:titre/episodes', (req, res) => {
 
 // POST ajouter série
 app.post('/series', (req, res) => {
-  const { titre, studio, annee, age, genre, image } = req.body;
+  const { titre, studio, annee, age, genre, image, url_id } = req.body;
   if (!titre) return res.status(400).json({ error: 'Titre requis' });
-  db.ajouterSerie(titre, studio, annee, age, genre, image || null);
+  db.ajouterSerie(titre, studio, annee, age, genre, image || null, url_id || null);
   res.json({ success: true });
 });
 
