@@ -258,18 +258,25 @@ client.on('interactionCreate', async interaction => {
           }
         }
         
-        // Restaurer séries
+        // Restaurer séries une par une
+        let ok = 0;
         for (const s of backup.series) {
-          await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(s) });
+          const body = {
+            titre: s.titre, studio: s.studio, annee: s.annee,
+            age: s.age, genre: s.genre, image: s.image, url_id: s.url_id
+          };
+          const r = await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          if (r.ok) ok++;
           if (s.vedette) await fetch(`${API}/series/${encodeURIComponent(s.titre)}/vedette`, { method: 'POST' });
         }
-        // Restaurer épisodes
+        // Restaurer épisodes un par un
         for (const [titre, eps] of Object.entries(backup.episodes || {})) {
           for (const ep of eps) {
-            await fetch(`${API}/series/${encodeURIComponent(titre)}/episodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ep) });
+            const epBody = { saison: ep.saison, numero: ep.numero, titre: ep.titre, video: ep.video };
+            await fetch(`${API}/series/${encodeURIComponent(titre)}/episodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(epBody) });
           }
         }
-        await interaction.editReply(`✅ Backup restauré ! ${backup.series.length} séries/films récupérés.`);
+        await interaction.editReply(`✅ Backup restauré ! ${ok}/${backup.series.length} séries importées.`);
       } catch(e) {
         await interaction.editReply('❌ Erreur lors de la restauration.');
       }
