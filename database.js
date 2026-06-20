@@ -44,7 +44,7 @@ module.exports = {
       for (let i = 0; i < 35; i++) url_id += chars[Math.floor(Math.random() * chars.length)];
     }
     const stmt = db.prepare('INSERT INTO series (titre, studio, annee, age, genre, image, url_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    return stmt.run(titre, studio, annee, age, genre, image || null);
+    return stmt.run(titre, studio, annee, age, genre, image || null, url_id);
   },
 
   supprimerSerie(titre) {
