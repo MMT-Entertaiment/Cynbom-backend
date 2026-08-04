@@ -9,7 +9,7 @@
     "start": "node api.js & node bot.js"
   },
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^11.0.0",
     "cors": "^2.8.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
@@ -17,6 +17,6 @@
     "node-fetch": "^3.3.2"
   },
   "engines": {
-  "node": ">=18.0.0 <25.0.0"
+    "node": "20.x"
   }
 }
