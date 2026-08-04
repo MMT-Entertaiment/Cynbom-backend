@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cynbom Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    html, body { width: 100%; height: 100%; background: #000000; font-family: 'Google Sans', sans-serif; color: #ffffff; }
+    
+    .login-page { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    
+    .login-container { background: #1a1a1a; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; }
+    
+    .login-container h1 { text-align: center; margin-bottom: 30px; font-size: 24px; font-weight: 600; }
+    
+    .form-group { margin-bottom: 20px; }
+    
+    .form-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #888; font-weight: 500; }
+    
+    .form-group input, select, textarea { 
+      width: 100%; padding: 12px 16px; border: 0.5px solid #222; border-radius: 8px; background: #0a0a0a; 
+      color: #ffffff; font-size: 14px; font-family: 'Google Sans', sans-serif; font-weight: 400;
+    }
+    
+    .form-group input:focus, select:focus, textarea:focus { outline: none; border-color: #444; background: #111; }
+    
+    .btn { 
+      padding: 12px 24px; border: none; border-radius: 20px; background: #ffffff; 
+      color: #000000; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; 
+      font-family: 'Google Sans', sans-serif; width: auto; display: inline-flex; align-items: center; justify-content: center;
+    }
+    
+    .btn:hover { background: #f0f0f0; }
+    
+    .btn:active { transform: scale(0.95); }
+    
+    .btn-full { width: 100%; }
+    
+    .btn-danger { background: #1a1a1a; color: #ffffff; border: 1px solid #444; }
+    
+    .btn-danger:hover { background: #222; border-color: #555; }
+    
+    .btn-small { padding: 8px 16px; font-size: 12px; }
+    
+    .error { color: #ff6b6b; text-align: center; margin-top: 15px; font-size: 13px; }
+    
+    .success { color: #51cf66; text-align: center; margin-top: 15px; font-size: 13px; }
+    
+    .panel-page { display: none; }
+    
+    .panel-page.show { display: block; }
+    
+    .navbar { background: #1a1a1a; padding: 16px 20px; border-bottom: 0.5px solid #222; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+    
+    .navbar h1 { font-size: 18px; font-weight: 600; }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; overflow-x: auto; padding-bottom: 8px; }
+    
+    .tabs::-webkit-scrollbar { height: 4px; }
+    
+    .tabs::-webkit-scrollbar-track { background: transparent; }
+    
+    .tabs::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    
+    .tab-btn { 
+      padding: 10px 20px; border: 1px solid #333; background: #0a0a0a; color: #666; border-radius: 20px; 
+      cursor: pointer; transition: all 0.2s ease; font-weight: 500; white-space: nowrap; flex-shrink: 0;
+      font-size: 13px; font-family: 'Google Sans', sans-serif;
+    }
+    
+    .tab-btn:hover { border-color: #444; }
+    
+    .tab-btn.active { background: #ffffff; color: #000000; border-color: #ffffff; }
+    
+    .tab-content { display: none; background: #1a1a1a; padding: 24px; border-radius: 16px; border: 0.5px solid #222; }
+    
+    .tab-content.active { display: block; }
+    
+    .tab-content h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+    
+    .tab-content h3 { font-size: 13px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .tab-content hr { border: none; border-top: 0.5px solid #222; margin: 24px 0; }
+    
+    .series-list { margin-top: 20px; max-height: 600px; overflow-y: auto; }
+    
+    .series-list::-webkit-scrollbar { width: 4px; }
+    
+    .series-list::-webkit-scrollbar-track { background: transparent; }
+    
+    .series-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    
+    .series-item { 
+      background: #0a0a0a; padding: 16px; margin-bottom: 8px; border-radius: 12px; 
+      border: 0.5px solid #222; display: flex; flex-direction: column; gap: 8px;
+    }
+    
+    .series-item strong { font-size: 14px; font-weight: 600; }
+    
+    .series-item p { font-size: 12px; color: #555; margin: 0; }
+    
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    
+    @media (max-width: 768px) {
+      .form-row { grid-template-columns: 1fr; }
+      .container { padding: 16px; }
+      .navbar { padding: 12px 16px; }
+      .tabs { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div class="login-page" id="loginPage">
+    <div class="login-container">
+      <h1> Cynbom</h1>
+<p style="text-align: center; color: #888; font-size: 13px; margin-bottom: 30px;">Admin Panel</p>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-full">Connexion</button>
+        <div id="loginError" class="error"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="panel-page" id="panelPage">
+    <div class="navbar">
+      <h1> Cynbom Admin</h1>
+      <button class="btn btn-danger btn-small" onclick="logout()">Déconnexion</button>
+    </div>
+
+    <div class="container">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('ajouter')"> Ajouter</button>
+        <button class="tab-btn" onclick="switchTab('modifier')"> Modifier</button>
+        <button class="tab-btn" onclick="switchTab('supprimer')"> Supprimer</button>
+        <button class="tab-btn" onclick="switchTab('vedette')"> Vedette</button>
+        <button class="tab-btn" onclick="switchTab('episodes')"> Épisodes</button>
+        <button class="tab-btn" onclick="switchTab('backup')"> Backup</button>
+        <button class="tab-btn" onclick="switchTab('liste')"> Liste</button>
+        <button class="tab-btn" onclick="switchTab('admins')"> Admins</button>
+      </div>
+
+      <!-- Ajouter Série -->
+      <div class="tab-content active" id="ajouter">
+        <h2>Ajouter une Série/Film</h2>
+        <form id="ajouterForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Titre *</label>
+              <input type="text" id="titre" required>
+            </div>
+            <div class="form-group">
+              <label>Studio *</label>
+              <input type="text" id="studio" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Type *</label>
+              <select id="type" required>
+                <option value="">-- Sélectionner --</option>
+                <option value="Série">Série</option>
+                <option value="Film">Film</option>
+                <option value="OST">OST</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Genre *</label>
+              <select id="genre" required>
+                <option value="">-- Sélectionner --</option>
+                <option value="Action">Action</option>
+                <option value="Aventure">Aventure</option>
+                <option value="Comédie">Comédie</option>
+                <option value="Drame">Drame</option>
+                <option value="Fantaisie">Fantaisie</option>
+                <option value="Horreur">Horreur</option>
+                <option value="Horreur Psychologique">Horreur Psychologique</option>
+                <option value="Musical">Musical</option>
+                <option value="Romance">Romance</option>
+                <option value="SF">SF</option>
+                <option value="Super-héros">Super-héros</option>
+                <option value="Thriller">Thriller</option>
+                <option value="Documentaire">Documentaire</option>
+                <option value="Animation">Animation</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Année *</label>
+              <input type="number" id="annee" required>
+            </div>
+            <div class="form-group">
+              <label>Âge (ex: 13+) *</label>
+              <input type="text" id="age" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>URL Image *</label>
+            <input type="url" id="image" required>
+          </div>
+          <button type="submit" class="btn btn-full">Ajouter</button>
+          <div id="ajouterMsg"></div>
+        </form>
+      </div>
+
+      <!-- Modifier Série -->
+      <div class="tab-content" id="modifier">
+        <h2>Modifier une Série</h2>
+        <form id="modifierForm">
+          <div class="form-group">
+            <label>Série *</label>
+            <select id="modTitre" required>
+              <option value="">-- Sélectionner --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Champ à modifier *</label>
+            <select id="modChamp" required>
+              <option value="">-- Sélectionner --</option>
+              <option value="titre">Titre</option>
+              <option value="studio">Studio</option>
+              <option value="annee">Année</option>
+              <option value="age">Âge</option>
+              <option value="genre">Genre</option>
+              <option value="type">Type</option>
+              <option value="image">Image</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nouvelle valeur *</label>
+            <input type="text" id="modValeur" required>
+          </div>
+          <button type="submit" class="btn btn-full">Modifier</button>
+          <div id="modifierMsg"></div>
+        </form>
+      </div>
+
+      <!-- Supprimer Série -->
+      <div class="tab-content" id="supprimer">
+        <h2>Supprimer une Série</h2>
+        <form id="supprimerForm">
+          <div class="form-group">
+            <label>Sélectionner une série *</label>
+            <select id="supTitre" required>
+              <option value="">-- Charger les séries --</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-full btn-danger">Supprimer définitivement</button>
+          <div id="supprimerMsg"></div>
+        </form>
+      </div>
+
+      <!-- Vedette -->
+      <div class="tab-content" id="vedette">
+        <h2>Mettre en Vedette</h2>
+        <form id="vedtteForm">
+          <div class="form-group">
+            <label>Série *</label>
+            <select id="vedTitre" required>
+              <option value="">-- Sélectionner --</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-full">Mettre en Vedette</button>
+          <div id="vedtteMsg"></div>
+        </form>
+
+        <hr>
+
+        <h3>Vedette Actuelle</h3>
+        <div class="form-group">
+          <p id="vedetteCourante" style="color: #888; padding: 16px; background: #0a0a0a; border-radius: 8px; border: 0.5px solid #222;">Aucune vedette</p>
+        </div>
+        <button type="button" class="btn btn-full btn-danger" onclick="retirerVedette()">Retirer Vedette</button>
+        <div id="vedtteMsg2"></div>
+      </div>
+
+      <!-- Épisodes -->
+      <div class="tab-content" id="episodes">
+        <h2>Gérer les Épisodes</h2>
+        
+        <h3>Ajouter un Épisode</h3>
+        <form id="ajouterEpisodeForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Série *</label>
+              <select id="epSerie" required>
+                <option value="">-- Sélectionner --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Numéro *</label>
+              <input type="number" id="epNumero" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Saison (défaut: 1)</label>
+              <input type="text" id="epSaison">
+            </div>
+            <div class="form-group">
+              <label>Titre de l'épisode</label>
+              <input type="text" id="epTitre">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>URL YouTube</label>
+            <input type="url" id="epVideo" placeholder="https://www.youtube.com/watch?v=XXXX">
+          </div>
+          <button type="submit" class="btn btn-full">Ajouter Épisode</button>
+          <div id="epAjouterMsg"></div>
+        </form>
+
+        <hr>
+
+        <h3>Modifier un Épisode</h3>
+        <form id="modifierEpisodeForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Série *</label>
+              <select id="epModSerie" required>
+                <option value="">-- Sélectionner --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Numéro *</label>
+              <input type="number" id="epModNumero" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Saison (défaut: 1)</label>
+              <input type="text" id="epModSaison">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nouvelle URL YouTube *</label>
+            <input type="url" id="epModVideo" required>
+          </div>
+          <button type="submit" class="btn btn-full">Modifier Épisode</button>
+          <div id="epModMsg"></div>
+        </form>
+
+        <hr>
+
+        <h3>Retirer un Épisode</h3>
+        <form id="retirerEpisodeForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Série *</label>
+              <select id="epRetirSerie" required>
+                <option value="">-- Sélectionner --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Numéro *</label>
+              <input type="number" id="epRetirNumero" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Saison (défaut: 1)</label>
+            <input type="text" id="epRetirSaison">
+          </div>
+          <button type="submit" class="btn btn-full btn-danger">Retirer Épisode</button>
+          <div id="epRetirMsg"></div>
+        </form>
+      </div>
+
+      <!-- Backup -->
+      <div class="tab-content" id="backup">
+        <h2>Backup & Restauration</h2>
+        <button class="btn" onclick="creerBackup()"> Créer un Backup</button>
+        <div id="backupMsg"></div>
+
+        <hr>
+
+        <h3>Restaurer depuis Backup</h3>
+        <form id="restaurerBackupForm">
+          <div class="form-group">
+            <label>Fichier backup JSON *</label>
+            <input type="file" id="backupFile" accept=".json" required>
+          </div>
+          <div class="form-group">
+            <label>Mode de restauration *</label>
+            <select id="backupMode" required>
+              <option value="">-- Sélectionner --</option>
+              <option value="ajouter">Ajouter (conserver l'existant)</option>
+              <option value="ecraser">Écraser (vider puis importer)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-full">Restaurer</button>
+          <div id="restaurerMsg"></div>
+        </form>
+      </div>
+
+      <!-- Liste Séries -->
+      <div class="tab-content" id="liste">
+        <h2>Toutes les Séries</h2>
+        <button class="btn" onclick="chargerSeries()">Charger la liste</button>
+        <div class="series-list" id="seriesList"></div>
+      </div>
+
+      <!-- Admins -->
+      <div class="tab-content" id="admins">
+        <h2>Gestion des Admins</h2>
+        <button class="btn" onclick="chargerAdmins()" style="margin-bottom: 20px;">Charger la liste</button>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 0.5px solid #222;">
+                <th style="text-align: left; padding: 12px; color: #888;">Pseudo</th>
+                <th style="text-align: left; padding: 12px; color: #888;">Email</th>
+                <th style="text-align: left; padding: 12px; color: #888;">Mdp</th>
+                <th style="text-align: center; padding: 12px; color: #888;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminsList">
+              <tr><td colspan="4" style="text-align: center; padding: 20px; color: #555;">Aucun utilisateur</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="adminsMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    const PASSWORD = 'Mmt.mstudio.cynbom.admin@Uzy';
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (document.getElementById('password').value === PASSWORD) {
+        localStorage.setItem('panelToken', 'authenticated');
+        showPanel();
+      } else {
+        document.getElementById('loginError').textContent = 'Mot de passe incorrect!';
+      }
+    });
+
+    function showPanel() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('panelPage').classList.add('show');
+    }
+
+    function logout() {
+      localStorage.removeItem('panelToken');
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('panelPage').classList.remove('show');
+      document.getElementById('password').value = '';
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    document.getElementById('ajouterForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        titre: document.getElementById('titre').value,
+        studio: document.getElementById('studio').value,
+        annee: parseInt(document.getElementById('annee').value),
+        age: document.getElementById('age').value,
+        genre: `${document.getElementById('type').value} | ${document.getElementById('genre').value}`,
+        image: document.getElementById('image').value,
+      };
+      try {
+        await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        document.getElementById('ajouterMsg').innerHTML = '<p class="success"> Série ajoutée!</p>';
+        document.getElementById('ajouterForm').reset();
+      } catch {
+        document.getElementById('ajouterMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    document.getElementById('modifierForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titre = document.getElementById('modTitre').value;
+      const champ = document.getElementById('modChamp').value;
+      const valeur = document.getElementById('modValeur').value;
+      try {
+        const res = await fetch(`${API}/series/${encodeURIComponent(titre)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ champ, valeur }),
+        });
+        const data = await res.json();
+        document.getElementById('modifierMsg').innerHTML = data.success ? '<p class="success"> Modifié!</p>' : '<p class="error"> Série introuvable</p>';
+      } catch {
+        document.getElementById('modifierMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    // Charger les séries dans un select
+    async function chargerSeriesSelect(selectId) {
+      try {
+        const series = await fetch(`${API}/series`).then(r => r.json());
+        const select = document.getElementById(selectId);
+        select.innerHTML = '<option value="">-- Sélectionner --</option>';
+        series.forEach(s => {
+          const option = document.createElement('option');
+          option.value = s.titre;
+          option.textContent = s.titre;
+          select.appendChild(option);
+        });
+      } catch {
+        console.error('Erreur lors du chargement des séries');
+      }
+    }
+
+    // Charger au démarrage tous les selects
+    async function chargerTousLesSelects() {
+      await chargerSeriesSelect('supTitre');
+      await chargerSeriesSelect('modTitre');
+      await chargerSeriesSelect('vedTitre');
+      await chargerSeriesSelect('epSerie');
+      await chargerSeriesSelect('epModSerie');
+      await chargerSeriesSelect('epRetirSerie');
+    }
+
+    chargerTousLesSelects();
+    chargerVedetteCourante();
+
+    document.getElementById('supprimerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!confirm('Êtes-vous sûr?')) return;
+      const titre = document.getElementById('supTitre').value;
+      try {
+        const res = await fetch(`${API}/series/${encodeURIComponent(titre)}`, { method: 'DELETE' });
+        const data = await res.json();
+        document.getElementById('supprimerMsg').innerHTML = data.success ? '<p class="success"> Supprimée!</p>' : '<p class="error"> Série introuvable</p>';
+        chargerSeriesSelect('supTitre');
+      } catch {
+        document.getElementById('supprimerMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    document.getElementById('vedtteForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titre = document.getElementById('vedTitre').value;
+      try {
+        const res = await fetch(`${API}/series/${encodeURIComponent(titre)}/vedette`, { method: 'POST' });
+        const data = await res.json();
+        document.getElementById('vedtteMsg').innerHTML = data.success ? '<p class="success"> Vedette activée!</p>' : '<p class="error"> Série introuvable</p>';
+        chargerVedetteCourante();
+      } catch {
+        document.getElementById('vedtteMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    async function chargerVedetteCourante() {
+      try {
+        const series = await fetch(`${API}/series`).then(r => r.json());
+        const vedette = series.find(s => s.vedette);
+        if (vedette) {
+          document.getElementById('vedetteCourante').textContent = vedette.titre;
+          document.getElementById('vedetteCourante').style.color = '#ffffff';
+        } else {
+          document.getElementById('vedetteCourante').textContent = 'Aucune vedette';
+          document.getElementById('vedetteCourante').style.color = '#888';
+        }
+      } catch {
+        console.error('Erreur lors du chargement de la vedette');
+      }
+    }
+
+    async function retirerVedette() {
+      try {
+        const series = await fetch(`${API}/series`).then(r => r.json());
+        const vedette = series.find(s => s.vedette);
+        if (!vedette) {
+          document.getElementById('vedtteMsg2').innerHTML = '<p class="error"> Aucune vedette à retirer</p>';
+          return;
+        }
+        const res = await fetch(`${API}/series/${encodeURIComponent(vedette.titre)}/vedette`, { method: 'DELETE' });
+        const data = await res.json();
+        document.getElementById('vedtteMsg2').innerHTML = data.success ? '<p class="success"> Vedette retirée!</p>' : '<p class="error"> Erreur</p>';
+        chargerVedetteCourante();
+      } catch {
+        document.getElementById('vedtteMsg2').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    }
+
+    document.getElementById('ajouterEpisodeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const serie = document.getElementById('epSerie').value;
+      const saison = document.getElementById('epSaison').value || '1';
+      const numero = parseInt(document.getElementById('epNumero').value);
+      const titre = document.getElementById('epTitre').value || null;
+      const video = document.getElementById('epVideo').value || null;
+      try {
+        const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saison, numero, titre, video }),
+        });
+        const data = await res.json();
+        document.getElementById('epAjouterMsg').innerHTML = data.success ? '<p class="success"> Épisode ajouté!</p>' : '<p class="error"> Série introuvable</p>';
+      } catch {
+        document.getElementById('epAjouterMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    document.getElementById('modifierEpisodeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const serie = document.getElementById('epModSerie').value;
+      const saison = document.getElementById('epModSaison').value || '1';
+      const numero = parseInt(document.getElementById('epModNumero').value);
+      const video = document.getElementById('epModVideo').value;
+      try {
+        const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes/${saison}/${numero}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ video }),
+        });
+        const data = await res.json();
+        document.getElementById('epModMsg').innerHTML = data.success ? '<p class="success"> Épisode modifié!</p>' : '<p class="error"> Épisode introuvable</p>';
+      } catch {
+        document.getElementById('epModMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    document.getElementById('retirerEpisodeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!confirm('Êtes-vous sûr?')) return;
+      const serie = document.getElementById('epRetirSerie').value;
+      const saison = document.getElementById('epRetirSaison').value || '1';
+      const numero = parseInt(document.getElementById('epRetirNumero').value);
+      try {
+        const res = await fetch(`${API}/series/${encodeURIComponent(serie)}/episodes/${saison}/${numero}`, { method: 'DELETE' });
+        const data = await res.json();
+        document.getElementById('epRetirMsg').innerHTML = data.success ? '<p class="success"> Épisode retiré!</p>' : '<p class="error"> Épisode introuvable</p>';
+      } catch {
+        document.getElementById('epRetirMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    async function creerBackup() {
+      try {
+        const series = await fetch(`${API}/series`).then(r => r.json());
+        const episodes = {};
+        for (const s of series) {
+          const eps = await fetch(`${API}/series/${encodeURIComponent(s.titre)}/episodes`).then(r => r.json());
+          if (eps.length > 0) episodes[s.titre] = eps;
+        }
+        const backup = JSON.stringify({ series, episodes }, null, 2);
+        const blob = new Blob([backup], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cynbom-backup-${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.json`;
+        a.click();
+        document.getElementById('backupMsg').innerHTML = '<p class="success"> Backup téléchargé!</p>';
+      } catch {
+        document.getElementById('backupMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    }
+
+    document.getElementById('restaurerBackupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('backupFile').files[0];
+      const mode = document.getElementById('backupMode').value;
+      if (!file) return;
+      try {
+        const backup = JSON.parse(await file.text());
+        if (mode === 'ecraser') {
+          const allSeries = await fetch(`${API}/series`).then(r => r.json());
+          for (const s of allSeries) {
+            await fetch(`${API}/series/${encodeURIComponent(s.titre)}`, { method: 'DELETE' });
+          }
+        }
+        for (const s of backup.series) {
+          await fetch(`${API}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(s) });
+          if (s.vedette) await fetch(`${API}/series/${encodeURIComponent(s.titre)}/vedette`, { method: 'POST' });
+        }
+        for (const [titre, eps] of Object.entries(backup.episodes || {})) {
+          for (const ep of eps) {
+            await fetch(`${API}/series/${encodeURIComponent(titre)}/episodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ep) });
+          }
+        }
+        document.getElementById('restaurerMsg').innerHTML = '<p class="success"> Backup restauré!</p>';
+      } catch {
+        document.getElementById('restaurerMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    });
+
+    async function chargerSeries() {
+      try {
+        const series = await fetch(`${API}/series`).then(r => r.json());
+        if (series.length === 0) {
+          document.getElementById('seriesList').innerHTML = '<p style="color: #555; text-align: center; padding: 40px 0;">Aucune série</p>';
+          return;
+        }
+        const html = series.map(s => `
+          <div class="series-item">
+            <strong>${s.vedette ? ' ' : ''}${s.titre}</strong>
+            <p>${s.studio} · ${s.annee} · ${s.age}</p>
+            <p>${s.genre}</p>
+          </div>
+        `).join('');
+        document.getElementById('seriesList').innerHTML = html;
+      } catch {
+        document.getElementById('seriesList').innerHTML = '<p class="error">Erreur de chargement</p>';
+      }
+    }
+
+    async function chargerAdmins() {
+      try {
+        const users = await fetch(`${API}/users`).then(r => r.json());
+        if (users.length === 0) {
+          document.getElementById('adminsList').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #555;">Aucun utilisateur</td></tr>';
+          return;
+        }
+        const html = users.map(u => {
+          const mdpPartiel = u.mdp.substring(0, 3) + '***';
+          const btnClass = u.admin ? 'btn-danger' : '';
+          const btnText = u.admin ? 'Retirer Admin' : 'Ajouter Admin';
+          return `
+            <tr style="border-bottom: 0.5px solid #222;">
+              <td style="padding: 12px; color: #fff;">${u.pseudo}</td>
+              <td style="padding: 12px; color: #888; font-size: 12px;">${u.email}</td>
+              <td style="padding: 12px; color: #555; font-family: monospace;">${mdpPartiel}</td>
+              <td style="padding: 12px; text-align: center;">
+                <button class="btn btn-small ${btnClass}" onclick="toggleAdmin('${u.pseudo}', ${!u.admin})">${btnText}</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        document.getElementById('adminsList').innerHTML = html;
+      } catch {
+        document.getElementById('adminsList').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #f00;">Erreur de chargement</td></tr>';
+      }
+    }
+
+    async function toggleAdmin(pseudo, makeAdmin) {
+      try {
+        const res = await fetch(`${API}/users/${pseudo}/admin`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ admin: makeAdmin })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('adminsMsg').innerHTML = `<p class="success"> ${makeAdmin ? 'Admin ajouté' : 'Admin retiré'}!</p>`;
+          chargerAdmins();
+        } else {
+          document.getElementById('adminsMsg').innerHTML = '<p class="error"> Erreur</p>';
+        }
+      } catch {
+        document.getElementById('adminsMsg').innerHTML = '<p class="error"> Erreur!</p>';
+      }
+    }
+
+    if (localStorage.getItem('panelToken')) {
+      showPanel();
+    }
+  </script>
+</body>
+</html>
