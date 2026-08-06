@@ -58,6 +58,11 @@ module.exports = {
     return result.changes > 0;
   },
 
+  retirerVedette() {
+    const result = db.prepare('UPDATE series SET vedette = 0').run();
+    return result.changes > 0;
+  },
+
   getSeries() {
     return db.prepare('SELECT * FROM series ORDER BY vedette DESC, id ASC').all();
   },
@@ -87,4 +92,36 @@ module.exports = {
     if (!serie) return [];
     return db.prepare('SELECT * FROM episodes WHERE serie_id = ? ORDER BY saison, numero').all(serie.id);
   },
+
+  // BACKUP & RESTORE
+  getAllData() {
+    const series = db.prepare('SELECT * FROM series ORDER BY vedette DESC, id ASC').all();
+    const episodes = {};
+    for (const s of series) {
+      const eps = db.prepare('SELECT * FROM episodes WHERE serie_id = ? ORDER BY saison, numero').all(s.id);
+      if (eps.length > 0) episodes[s.titre] = eps;
+    }
+    return { series, episodes };
+  },
+
+  restoreData(data, mode = 'ajouter') {
+    if (mode === 'ecraser') {
+      db.prepare('DELETE FROM episodes').run();
+      db.prepare('DELETE FROM series').run();
+    }
+    
+    for (const s of data.series) {
+      this.ajouterSerie(s.titre, s.studio, s.annee, s.age, s.genre, s.image);
+      if (s.vedette) {
+        const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(s.titre);
+        db.prepare('UPDATE series SET vedette = 1 WHERE id = ?').run(serie.id);
+      }
+    }
+    
+    for (const [titre, eps] of Object.entries(data.episodes || {})) {
+      for (const ep of eps) {
+        this.ajouterEpisode(titre, ep.saison, ep.numero, ep.titre, ep.video);
+      }
+    }
+  }
 };
