@@ -106,10 +106,37 @@ app.post('/auth', (req, res) => {
   res.json({ success: true, user: { pseudo: user.pseudo, email: user.email, admin: user.admin } });
 });
 
-// BACKUP
-app.get('/backup', (req, res) => {
-  const data = db.getAllData();
-  res.json(data);
+// AUTH
+app.post('/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email et mot de passe requis' });
+  }
+  
+  let user = db.getUserByEmail(email);
+  
+  // Si user existe pas, créer un compte
+  if (!user) {
+    const pseudo = email.split('@')[0];
+    db.ajouterUser(pseudo, email, password);
+    user = db.getUserByEmail(email);
+  }
+  
+  // Vérifier le mot de passe
+  if (user.mdp !== password) {
+    return res.json({ success: false, message: 'Mot de passe incorrect' });
+  }
+  
+  res.json({ 
+    success: true, 
+    user: { 
+      pseudo: user.pseudo, 
+      email: user.email, 
+      admin: user.admin,
+      created: false // Nouveau compte ou pas
+    } 
+  });
 });
 
 app.post('/backup/restore', (req, res) => {
