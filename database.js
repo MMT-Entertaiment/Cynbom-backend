@@ -87,10 +87,31 @@ module.exports = {
     return result.changes > 0;
   },
 
-  getEpisodes(titreSerie) {
-    const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(titreSerie);
-    if (!serie) return [];
-    return db.prepare('SELECT * FROM episodes WHERE serie_id = ? ORDER BY saison, numero').all(serie.id);
+  // USERS
+  ajouterUser(pseudo, email, mdp) {
+    try {
+      const stmt = db.prepare('INSERT INTO users (pseudo, email, mdp) VALUES (?, ?, ?)');
+      return stmt.run(pseudo, email, mdp);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  getUserByEmail(email) {
+    return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  },
+
+  getUserByPseudo(pseudo) {
+    return db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
+  },
+
+  getUsers() {
+    return db.prepare('SELECT id, pseudo, email, admin, created_at FROM users').all();
+  },
+
+  setAdmin(pseudo, admin) {
+    const result = db.prepare('UPDATE users SET admin = ? WHERE pseudo = ?').run(admin ? 1 : 0, pseudo);
+    return result.changes > 0;
   },
 
   // BACKUP & RESTORE
