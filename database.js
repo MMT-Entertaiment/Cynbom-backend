@@ -1,157 +1,243 @@
-const Database = require('better-sqlite3');
-const db = new Database('cynbom.db');
+const { MongoClient } = require('mongodb');
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS series (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    titre TEXT NOT NULL,
-    studio TEXT,
-    annee INTEGER,
-    age TEXT,
-    genre TEXT,
-    image TEXT,
-    vedette INTEGER DEFAULT 0
-  );
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const client = new MongoClient(MONGODB_URI);
 
-  CREATE TABLE IF NOT EXISTS episodes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    serie_id INTEGER NOT NULL,
-    saison TEXT NOT NULL,
-    numero INTEGER NOT NULL,
-    titre TEXT,
-    video TEXT,
-    FOREIGN KEY (serie_id) REFERENCES series(id)
-  );
+let db;
 
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pseudo TEXT NOT NULL UNIQUE,
-    email TEXT NOT NULL UNIQUE,
-    mdp TEXT NOT NULL,
-    admin INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+async function connectDB() {
+  try {
+    await client.connect();
+    db = client.db('cynbom');
+    console.log('MongoDB connecté');
+  } catch (e) {
+    console.error('Erreur MongoDB:', e);
+  }
+}
 
-// Migration : ajouter les colonnes si elles n'existent pas encore
-try { db.exec('ALTER TABLE series ADD COLUMN image TEXT'); } catch {}
-try { db.exec('ALTER TABLE episodes ADD COLUMN video TEXT'); } catch {}
-try { db.exec('ALTER TABLE episodes ADD COLUMN saison_new TEXT'); db.exec('UPDATE episodes SET saison_new = CAST(saison AS TEXT)'); } catch {}
+connectDB();
 
 module.exports = {
   // SÉRIES
-  ajouterSerie(titre, studio, annee, age, genre, image) {
-    const stmt = db.prepare('INSERT INTO series (titre, studio, annee, age, genre, image) VALUES (?, ?, ?, ?, ?, ?)');
-    return stmt.run(titre, studio, annee, age, genre, image || null);
-  },
-
-  supprimerSerie(titre) {
-    const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(titre);
-    if (!serie) return false;
-    db.prepare('DELETE FROM episodes WHERE serie_id = ?').run(serie.id);
-    db.prepare('DELETE FROM series WHERE id = ?').run(serie.id);
-    return true;
-  },
-
-  modifierSerie(titre, champ, valeur) {
-    const champsAutorisés = ['titre', 'studio', 'annee', 'age', 'genre', 'image'];
-    if (!champsAutorisés.includes(champ)) return false;
-    const stmt = db.prepare(`UPDATE series SET ${champ} = ? WHERE titre = ?`);
-    const result = stmt.run(valeur, titre);
-    return result.changes > 0;
-  },
-
-  setVedette(titre) {
-    db.prepare('UPDATE series SET vedette = 0').run();
-    const result = db.prepare('UPDATE series SET vedette = 1 WHERE titre = ?').run(titre);
-    return result.changes > 0;
-  },
-
-  retirerVedette() {
-    const result = db.prepare('UPDATE series SET vedette = 0').run();
-    return result.changes > 0;
-  },
-
-  getSeries() {
-    return db.prepare('SELECT * FROM series ORDER BY vedette DESC, id ASC').all();
-  },
-
-  getSerie(titre) {
-    return db.prepare('SELECT * FROM series WHERE titre = ?').get(titre);
-  },
-
-  // ÉPISODES
-  ajouterEpisode(titreSerie, saison, numero, titreEp, video) {
-    const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(titreSerie);
-    if (!serie) return false;
-    const stmt = db.prepare('INSERT INTO episodes (serie_id, saison, numero, titre, video) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(serie.id, saison, numero, titreEp, video || null);
-    return true;
-  },
-
-  retirerEpisode(titreSerie, saison, numero) {
-    const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(titreSerie);
-    if (!serie) return false;
-    const result = db.prepare('DELETE FROM episodes WHERE serie_id = ? AND saison = ? AND numero = ?').run(serie.id, saison, numero);
-    return result.changes > 0;
-  },
-
-  // USERS
-  ajouterUser(pseudo, email, mdp) {
+  async ajouterSerie(titre, studio, annee, age, genre, image) {
     try {
-      const stmt = db.prepare('INSERT INTO users (pseudo, email, mdp) VALUES (?, ?, ?)');
-      return stmt.run(pseudo, email, mdp);
+      const result = await db.collection('series').insertOne({
+        titre, studio, annee, age, genre, image: image || null, vedette: 0
+      });
+      return result;
     } catch (e) {
+      console.error('Erreur ajouterSerie:', e);
       return null;
     }
   },
 
-  getUserByEmail(email) {
-    return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  async supprimerSerie(titre) {
+    try {
+      const result = await db.collection('series').deleteOne({ titre });
+      await db.collection('episodes').deleteMany({ serie_titre: titre });
+      return result.deletedCount > 0;
+    } catch (e) {
+      console.error('Erreur supprimerSerie:', e);
+      return false;
+    }
   },
 
-  getUserByPseudo(pseudo) {
-    return db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
+  async modifierSerie(titre, champ, valeur) {
+    try {
+      const champsAutorisés = ['titre', 'studio', 'annee', 'age', 'genre', 'image'];
+      if (!champsAutorisés.includes(champ)) return false;
+      
+      const result = await db.collection('series').updateOne(
+        { titre },
+        { $set: { [champ]: valeur } }
+      );
+      return result.modifiedCount > 0;
+    } catch (e) {
+      console.error('Erreur modifierSerie:', e);
+      return false;
+    }
   },
 
-  getUsers() {
-    return db.prepare('SELECT id, pseudo, email, admin, created_at FROM users').all();
+  async setVedette(titre) {
+    try {
+      await db.collection('series').updateMany({}, { $set: { vedette: 0 } });
+      const result = await db.collection('series').updateOne(
+        { titre },
+        { $set: { vedette: 1 } }
+      );
+      return result.modifiedCount > 0;
+    } catch (e) {
+      console.error('Erreur setVedette:', e);
+      return false;
+    }
   },
 
-  setAdmin(pseudo, admin) {
-    const result = db.prepare('UPDATE users SET admin = ? WHERE pseudo = ?').run(admin ? 1 : 0, pseudo);
-    return result.changes > 0;
+  async retirerVedette() {
+    try {
+      const result = await db.collection('series').updateMany({}, { $set: { vedette: 0 } });
+      return result.modifiedCount > 0;
+    } catch (e) {
+      console.error('Erreur retirerVedette:', e);
+      return false;
+    }
+  },
+
+  async getSeries() {
+    try {
+      return await db.collection('series').find({}).sort({ vedette: -1, _id: 1 }).toArray();
+    } catch (e) {
+      console.error('Erreur getSeries:', e);
+      return [];
+    }
+  },
+
+  async getSerie(titre) {
+    try {
+      return await db.collection('series').findOne({ titre });
+    } catch (e) {
+      console.error('Erreur getSerie:', e);
+      return null;
+    }
+  },
+
+  // ÉPISODES
+  async ajouterEpisode(titreSerie, saison, numero, titreEp, video) {
+    try {
+      const result = await db.collection('episodes').insertOne({
+        serie_titre: titreSerie,
+        saison: saison || '1',
+        numero,
+        titre: titreEp,
+        video: video || null
+      });
+      return result.insertedId ? true : false;
+    } catch (e) {
+      console.error('Erreur ajouterEpisode:', e);
+      return false;
+    }
+  },
+
+  async retirerEpisode(titreSerie, saison, numero) {
+    try {
+      const result = await db.collection('episodes').deleteOne({
+        serie_titre: titreSerie,
+        saison,
+        numero
+      });
+      return result.deletedCount > 0;
+    } catch (e) {
+      console.error('Erreur retirerEpisode:', e);
+      return false;
+    }
+  },
+
+  async getEpisodes(titreSerie) {
+    try {
+      return await db.collection('episodes').find({ serie_titre: titreSerie }).sort({ saison: 1, numero: 1 }).toArray();
+    } catch (e) {
+      console.error('Erreur getEpisodes:', e);
+      return [];
+    }
+  },
+
+  // USERS
+  async ajouterUser(pseudo, email, mdp) {
+    try {
+      const result = await db.collection('users').insertOne({
+        pseudo, email, mdp, admin: 0, created_at: new Date()
+      });
+      return result.insertedId ? true : false;
+    } catch (e) {
+      console.error('Erreur ajouterUser:', e);
+      return null;
+    }
+  },
+
+  async getUserByEmail(email) {
+    try {
+      return await db.collection('users').findOne({ email });
+    } catch (e) {
+      console.error('Erreur getUserByEmail:', e);
+      return null;
+    }
+  },
+
+  async getUserByPseudo(pseudo) {
+    try {
+      return await db.collection('users').findOne({ pseudo });
+    } catch (e) {
+      console.error('Erreur getUserByPseudo:', e);
+      return null;
+    }
+  },
+
+  async getUsers() {
+    try {
+      return await db.collection('users').find({}).project({ pseudo: 1, email: 1, admin: 1, created_at: 1 }).toArray();
+    } catch (e) {
+      console.error('Erreur getUsers:', e);
+      return [];
+    }
+  },
+
+  async setAdmin(pseudo, admin) {
+    try {
+      const result = await db.collection('users').updateOne(
+        { pseudo },
+        { $set: { admin: admin ? 1 : 0 } }
+      );
+      return result.modifiedCount > 0;
+    } catch (e) {
+      console.error('Erreur setAdmin:', e);
+      return false;
+    }
   },
 
   // BACKUP & RESTORE
-  getAllData() {
-    const series = db.prepare('SELECT * FROM series ORDER BY vedette DESC, id ASC').all();
-    const episodes = {};
-    for (const s of series) {
-      const eps = db.prepare('SELECT * FROM episodes WHERE serie_id = ? ORDER BY saison, numero').all(s.id);
-      if (eps.length > 0) episodes[s.titre] = eps;
+  async getAllData() {
+    try {
+      const series = await db.collection('series').find({}).sort({ vedette: -1, _id: 1 }).toArray();
+      const episodes = {};
+      
+      for (const s of series) {
+        const eps = await db.collection('episodes').find({ serie_titre: s.titre }).sort({ saison: 1, numero: 1 }).toArray();
+        if (eps.length > 0) episodes[s.titre] = eps;
+      }
+      
+      return { series, episodes };
+    } catch (e) {
+      console.error('Erreur getAllData:', e);
+      return { series: [], episodes: {} };
     }
-    return { series, episodes };
   },
 
-  restoreData(data, mode = 'ajouter') {
-    if (mode === 'ecraser') {
-      db.prepare('DELETE FROM episodes').run();
-      db.prepare('DELETE FROM series').run();
-    }
-    
-    for (const s of data.series) {
-      this.ajouterSerie(s.titre, s.studio, s.annee, s.age, s.genre, s.image);
-      if (s.vedette) {
-        const serie = db.prepare('SELECT id FROM series WHERE titre = ?').get(s.titre);
-        db.prepare('UPDATE series SET vedette = 1 WHERE id = ?').run(serie.id);
+  async restoreData(data, mode = 'ajouter') {
+    try {
+      if (mode === 'ecraser') {
+        await db.collection('episodes').deleteMany({});
+        await db.collection('series').deleteMany({});
       }
-    }
-    
-    for (const [titre, eps] of Object.entries(data.episodes || {})) {
-      for (const ep of eps) {
-        this.ajouterEpisode(titre, ep.saison, ep.numero, ep.titre, ep.video);
+      
+      for (const s of data.series) {
+        await db.collection('series').insertOne(s);
+        if (s.vedette) {
+          await db.collection('series').updateOne(
+            { titre: s.titre },
+            { $set: { vedette: 1 } }
+          );
+        }
       }
+      
+      for (const [titre, eps] of Object.entries(data.episodes || {})) {
+        for (const ep of eps) {
+          await db.collection('episodes').insertOne({
+            ...ep,
+            serie_titre: titre
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Erreur restoreData:', e);
     }
   }
 };
